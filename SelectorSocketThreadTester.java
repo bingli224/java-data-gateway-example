@@ -2,6 +2,10 @@
 /**
  * By BingLi224
  *
+ * @author	BingLi224
+ *
+ * @version	2018.08.11
+ *
  * 11:28 THA 11/08/2018
  *
  * Get data from source, save it to shared variable with synchronization, and broadcast to multiple clients through sockets.
@@ -17,8 +21,11 @@
  *  https://www.journaldev.com/1037/java-thread-wait-notify-and-notifyall-example
  *  http://tutorials.jenkov.com/java-nio/selectors.html
  *
- * @author	BingLi224
- * @version	2018.08.11
+ * @version	2018.08.16
+ *
+ * 00:39 THA 17/08/2018
+ *
+ * Fix: remove from <code>clientsOut</code> after lambda is done if got IOException
  */
 
 import java.net.Socket;
@@ -175,6 +182,8 @@ public class SelectorSocketThreadTester
 								{
 									final byte [] shared = cache.getBytes ( );
 
+									HashSet <OutputStream> closed = new HashSet <OutputStream> ( );
+
 									// send data to all clients
 									clientsOut.iterator ( ).forEachRemaining ( o -> {
 										try {
@@ -184,9 +193,17 @@ public class SelectorSocketThreadTester
 											ioe.printStackTrace ( );
 
 											// disconnect
-											clientsOut.remove ( o );
+											try {
+												o.close ( );
+											} catch ( IOException ioe1 ) { }
+
+											closed.add ( o );
 										}
 									} );
+
+									// remove the disconnected onces
+									if ( closed.size ( ) > 0 )
+										clientsOut.removeAll ( closed );
 
 									// remember the latest data
 									old = cache;
